@@ -48,8 +48,3 @@ variable "aws_auth_admin_roles" {
   type        = list(string)
   default     = []
 }
-
-variable "alb-name" {
-  description = "eks-from-terraform alb"
-  type        = string
-}

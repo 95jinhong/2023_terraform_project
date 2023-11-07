@@ -59,3 +59,89 @@ module "eks" {
   }
   aws_auth_admin_roles = ["arn:aws:iam::776665911703:role/eks-admin-role"]
 }
+
+
+## 별도 모듈화 필요
+/*
+module "add-on" {
+  source = "./module/add-on"
+
+  alb-name            = "eks-external-alb"
+  vpc_id              = module.vpc.vpc_id
+  public_subnets_ids  = module.vpc.public_subnets_ids
+}
+*/
+
+/*
+module "lb_role" {
+  source = "./module/terraform-aws-iam/modules/iam-role-for-service-accounts-eks"
+  #role_name                              = "${var.env_name}_eks_lb"
+  role_name                              = "aws-gateway-controller"
+  attach_load_balancer_controller_policy = true
+
+  oidc_providers = {
+     main = {
+     # 별도 상속 필요 
+     #provider_arn               = module.eks.oidc_provider_arn
+     provider_arn               = "arn:aws:iam::776665911703:oidc-provider/oidc.eks.ap-northeast-2.amazonaws.com/id/1B67660AF7A0E3CE8628CAF1587CE78"
+     namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
+     }
+ }
+ }
+
+resource "kubernetes_service_account" "service-account" {
+  metadata {
+     name      = "aws-load-balancer-controller"
+     namespace = "kube-system"
+     labels = {
+     "app.kubernetes.io/name"      = "aws-load-balancer-controller"
+     "app.kubernetes.io/component" = "controller"
+     }
+     annotations = {
+     "eks.amazonaws.com/role-arn"               = module.lb_role.iam_role_arn
+     #"eks.amazonaws.com/role-arn"                = "arn:aws:iam::776665911703:role/aws-gateway-controller"
+     "eks.amazonaws.com/sts-regional-endpoints" = "true"
+     }
+ }
+ }
+*/
+
+# resource "helm_release" "alb-controller" {
+#  name       = "aws-load-balancer-controller"
+#  repository = "https://aws.github.io/eks-charts"
+#  chart      = "aws-load-balancer-controller"
+#  namespace  = "kube-system"
+#  depends_on = [
+#      kubernetes_service_account.service-account
+#  ]
+
+#  set {
+#      name  = "region"
+#      value = "ap-northeast-2"
+#  }
+
+#  set {
+#      name  = "vpcId"
+#      value = module.vpc.vpc_id
+#  }
+
+#  set {
+#      name  = "image.repository"
+#      value = "602401143452.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-load-balancer-controller"
+#  }
+
+#  set {
+#      name  = "serviceAccount.create"
+#      value = "false"
+#  }
+
+#  set {
+#      name  = "serviceAccount.name"
+#      value = "aws-load-balancer-controller"
+#  }
+
+#  set {
+#      name  = "clusterName"
+#      value = "eks-from-terraform"
+#  }
+#  }
